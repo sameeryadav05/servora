@@ -1,0 +1,32 @@
+{
+  // Visit https://aka.ms/tsconfig to read more about this file
+  "compilerOptions": {
+    // File Layout
+    "rootDir": "./src",
+    "outDir": "./dist",
+    "paths": {
+      "@shared/*": ["../shared/*"]
+    },
+
+
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "target": "es6",
+    "typeRoots": ["./node_modules/@types","./src/types"],
+
+    // For nodejs:
+    // "lib": ["esnext"],
+    // "types": ["node"],
+    // and npm install -D @types/node
+
+
+
+    // Recommended Options
+    "strict": true,
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true
+  },
+  "ts-node": {
+    "files": true
+  }
+}
