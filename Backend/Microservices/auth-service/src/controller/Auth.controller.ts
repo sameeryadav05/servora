@@ -141,12 +141,17 @@ export const SignUpController = wrapAsync(async function(req:Request,res:Respons
     const AccessToken = generateAccessToken(payload);
 
     const RefreshToken = generateRefreshToken(payload)
+
+    await redis.set(`RefreshToken:${user._id.toString()}`,RefreshToken,{
+        EX:60*60*24*7
+    })
+
     res
     .cookie('refresh_token',RefreshToken,
         {
             maxAge:7*24*60*60*1000,
             httpOnly:true,
-            secure:false,
+            secure:process.env.NODE_ENV == 'production',
             sameSite:"strict"
         }
     )
@@ -163,6 +168,22 @@ export const SignUpController = wrapAsync(async function(req:Request,res:Respons
 export const LoginController = wrapAsync(async function(req:Request,res:Response)
 {
     const {password,email}= req.body
+
+    const ip = req.ip;
+    const key = `RateLimit:login_${email}_${ip}`
+
+    const currentAttempts = await redis.get(key);
+
+    if(currentAttempts && Number(currentAttempts) >= 3)
+    {
+        const ttl = await redis.ttl(key);
+
+        return res.status(429).json({
+            success:false,
+            message:`Too many login attempts. Please try again after ${ttl} seconds`
+        })
+    }
+
     const isUserExist = await User.findOne({email}).select('+password')
     if(!isUserExist)
     {
@@ -174,9 +195,14 @@ export const LoginController = wrapAsync(async function(req:Request,res:Response
     const isPasswordCorrect = await bcrypt.compare(password,HashedPassword);
     if(!isPasswordCorrect)
     {
-        throw new ExpressError(422,"Incorrect Password");
+            const reqCount = await redis.incr(key);
+            if(reqCount === 1)
+            {
+                await redis.expire(key,60);
+            }
+            throw new ExpressError(422,"Incorrect Password");
     }
-
+    await redis.del(key);
     const payload = {
         id:isUserExist._id.toString(),
         fullName:isUserExist.fullName,
@@ -185,11 +211,16 @@ export const LoginController = wrapAsync(async function(req:Request,res:Response
     }
     const AccessToken = generateAccessToken(payload);
     const RefreshToken = generateRefreshToken(payload);
+    await redis.set(`RefreshToken:${isUserExist._id.toString()}`,RefreshToken,{
+        EX:60*60*24*7
+    })
+
+
     res.cookie('refresh_token',RefreshToken,
         {
             maxAge:7*24*60*60*1000,
             httpOnly:true,
-            secure:false,
+            secure:process.env.NODE_ENV == 'production',
             sameSite:"strict"
         }
     )
@@ -200,6 +231,7 @@ export const LoginController = wrapAsync(async function(req:Request,res:Response
         message:`Welcome Back , ${isUserExist.fullName} !`,
         AccessToken
     })
+
 })
 
 export const ForgotPasswordController = wrapAsync(async function(req:Request,res:Response){
@@ -345,3 +377,32 @@ export const RefreshTokenController = wrapAsync(
     });
   }
 );
+
+export const LogoutController = wrapAsync(async (req:Request,res:Response)=>{
+    const refreshToken = req.cookies?.refresh_token;
+
+    if(!refreshToken)
+    {
+    return res.status(200).json({
+        success: true,
+        message: "Logged out successfully"
+      });
+    }
+
+    const decoded = verifyRefreshToken(refreshToken);
+
+    if(decoded?.id)
+    {
+        await redis.del(`RefreshToken:${decoded.id}`);
+    }
+    res.clearCookie("refresh_token", {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "strict",
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: "Logout successful"
+    });
+})

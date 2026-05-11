@@ -33,6 +33,7 @@ app.use('/api/auth/signup',AuthProxy)
 app.use('/api/auth/login',AuthProxy)
 app.use('/api/auth/forgot-password',AuthProxy)
 app.use('/api/auth/refresh-token',AuthProxy)
+app.use('/api/auth/logout',AuthProxy)
 app.use('/api/auth/reset-password/:token',AuthProxy)
 
 // private route

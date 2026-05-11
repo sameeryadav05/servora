@@ -1,5 +1,5 @@
 import express, { Request, Response } from 'express'
-import { ForgotPasswordController, LoginController, RefreshTokenController, ResetPasswordController, SendMailController, SignUpController} from '../controller/Auth.controller.js'
+import { ForgotPasswordController, LoginController, LogoutController, RefreshTokenController, ResetPasswordController, SendMailController, SignUpController} from '../controller/Auth.controller.js'
 import { User } from '../model/user.model.js';
 import ExpressError from '../utils/ExpressError.js';
 
@@ -11,6 +11,7 @@ AuthRouter.post('/login',LoginController);
 AuthRouter.post('/forgot-password',ForgotPasswordController);
 AuthRouter.post('/reset-password/:token',ResetPasswordController);
 AuthRouter.get('/refresh-token',RefreshTokenController);
+AuthRouter.get('/logout',LogoutController);
 
 AuthRouter.get('/profile',async (req:Request,res:Response)=>{
     const userHeader = req.headers['x-user'];

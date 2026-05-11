@@ -8,7 +8,7 @@ export async function Auth_Middleware(req:Request,res:Response,next:NextFunction
 {
     const JWT_SECRET:string = process.env.ACCESS_JWT_SECRET!;
     try {
-        const token = req.headers.authorization?.split(" ")[1] ;
+        const token = req.headers.authorization?.split(" ")[1] || req.body.AccessToken;
 
 
         if(!token) {

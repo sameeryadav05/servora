@@ -1,9 +1,11 @@
 
 
 import  {createClient} from 'redis'
+import dotenv from 'dotenv'
+dotenv.config();
 
 const redis = createClient({
-  url:"redis://default:sameer_2005@13.206.95.140:6379"
+  url:process.env.REDIS_URL!,
 })
 
 redis.on('connect',()=>{
